@@ -1,8 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { combineLatest, Observable, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import {
+  BehaviorSubject,
+  combineLatest,
+  merge,
+  Observable,
+  Subject,
+  throwError,
+} from 'rxjs';
+import { catchError, map, scan, tap } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
@@ -29,7 +36,8 @@ export class ProductService {
   productsWithCategory$ = combineLatest([
     this.products$,
     this.productCategoryService.productCategories$,
-  ]).pipe( // combine emits one item
+  ]).pipe(
+    // combine emits one item
     map(([products, categories]) =>
       products.map(
         (product) =>
@@ -44,11 +52,51 @@ export class ProductService {
     )
   );
 
+  //since both product list and alt use this we put in the product service
+  //emits at least once so we assign behaviour of 0
+  private productSelectedSubject = new BehaviorSubject<number>(0);
+  productSelectedAction$ = this.productSelectedSubject.asObservable();
+
+  //get a single product
+  selectedProduct$ = combineLatest([
+    this.productsWithCategory$, //so we get the product names
+    this.productSelectedAction$, //so reacts
+  ]).pipe(
+    map(
+      ([products, selectedProductId]) =>
+        products.find((product) => product.id === selectedProductId) //find the product in the list
+    ),
+    tap((product) => console.log('selectProduct ', product))
+  );
+
+  //______ start data stream____________
+  //there are three steps for reacting to actions
+  //1. declare private property; 2. expose the subject asboservable, 3. combine the action stream with data stream for new observable
+  private productInsertedSubject = new Subject<Product>(); //1
+  productInsertedAction$ = this.productInsertedSubject.asObservable(); //2
+  productsWithAdd$ = merge(
+    //3
+    this.productsWithCategory$, //data stream to dispaly name instead of id
+    this.productInsertedAction$ //action stream
+  ).pipe(scan((acc: Product[], value: Product) => [...acc, value]));
+  //______ end data stream __________________
+
   constructor(
     private http: HttpClient,
     private productCategoryService: ProductCategoryService,
     private supplierService: SupplierService
   ) {}
+
+  //takes in sleceted product id and calls the subject next method to emit its values
+  //any code in the application can call this method to emit a value
+  selectedProductChanged(selectedProductId: number): void {
+    this.productSelectedSubject.next(selectedProductId);
+  }
+
+  addProduct(newProduct?: Product) {
+    newProduct = newProduct || this.fakeProduct(); //set to passed in product or to the fake product
+    this.productInsertedSubject.next(newProduct); //emit that new produyct
+  }
 
   private fakeProduct(): Product {
     return {
@@ -77,5 +125,5 @@ export class ProductService {
     }
     console.error(err);
     return throwError(errorMessage);
-  }
-}
+  } //end handle error
+} //end class

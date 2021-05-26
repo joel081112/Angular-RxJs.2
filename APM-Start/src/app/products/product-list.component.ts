@@ -25,7 +25,7 @@ export class ProductListComponent {
   //use combine latest to show the string not the id
   //combined action stream with data stream
   products$ = combineLatest([
-    this.productService.productsWithCategory$,
+    this.productService.productsWithAdd$,
     //this.categorySelectedAction$, needs an initial value
     /* this.categorySelectedAction$.pipe(
       startWith(0)
@@ -71,7 +71,7 @@ export class ProductListComponent {
   ) {}
 
   onAdd(): void {
-    console.log('Not yet implemented');
+    this.productService.addProduct();
   }
 
   onSelected(categoryId: string): void {
