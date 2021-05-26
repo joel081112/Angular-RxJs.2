@@ -1,15 +1,34 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { throwError, Observable } from 'rxjs';
+import { throwError, Observable, of } from 'rxjs';
+import { concatMap, map, tap } from 'rxjs/operators';
+import { Supplier } from './supplier';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SupplierService {
   suppliersUrl = 'api/suppliers';
 
-  constructor(private http: HttpClient) { }
+  //observable emits an observable emits a supplier
+  suppliersWithMap$ = of(1, 2, 8).pipe( //mock observable ids
+    map((id) => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`)) //map each id to http get
+  );
+
+  suppliersWithConcatMap$ = of(1,5,8).pipe(
+    tap(id => console.log('concatMap source Observable', id)), //log the id coming in from the observable
+    concatMap(id => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`)) //new inner observable
+  );
+
+  constructor(private http: HttpClient) {
+    /* this.suppliersWithMap$.subscribe( o => o.subscribe(
+      item=>console.log('map result ', item))
+    ); */
+    this.suppliersWithConcatMap$.subscribe(
+      item => console.log('concatMap result', item)
+    )
+  }
 
   private handleError(err: any): Observable<never> {
     // in a real world app, we may send the server to some remote logging infrastructure
@@ -26,5 +45,4 @@ export class SupplierService {
     console.error(err);
     return throwError(errorMessage);
   }
-
 }
