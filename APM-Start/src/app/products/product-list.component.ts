@@ -1,41 +1,27 @@
-import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { EMPTY } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
-import { Product } from './product';
 import { ProductService } from './product.service';
 
 @Component({
   templateUrl: './product-list.component.html',
-  styleUrls: ['./product-list.component.css']
+  styleUrls: ['./product-list.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ProductListComponent implements OnInit{
+export class ProductListComponent {
   pageTitle = 'Product List';
   errorMessage = '';
   categories;
 
-  //old way - products: Product[] = [];
-  products$: Observable<Product[]>;
-  // no longer need 
-  //sub: Subscription;
+  products$ = this.productService.products$.pipe(
+    catchError(err => {
+      this.errorMessage = err;
+      return EMPTY;
+    })
+  );
 
-  constructor(private productService: ProductService) { }
-
-  ngOnInit(): void {
-    //old way
-    /* this.sub = this.productService.getProducts()
-      .subscribe(
-        //observer is notified
-        products => this.products = products,
-        error => this.errorMessage = error
-      ); */
-      //this way uses async pipe
-      this.products$ = this.productService.getProducts();
-  }
-
-  /* old way - ensure the stream is stopped by unsubscribing
-  ngOnDestroy(): void {
-    this.sub.unsubscribe();
-  } */
+  constructor(private productService: ProductService) {}
 
   onAdd(): void {
     console.log('Not yet implemented');
