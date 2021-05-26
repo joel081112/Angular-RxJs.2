@@ -11,6 +11,7 @@ import { ProductCategory } from './product-category';
 export class ProductCategoryService {
   private productCategoriesUrl = 'api/productCategories';
 
+  //give a stream list of the product categories
   productCategories$ = this.http
     .get<ProductCategory[]>(this.productCategoriesUrl)
     .pipe(
