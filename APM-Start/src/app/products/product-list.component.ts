@@ -14,7 +14,8 @@ export class ProductListComponent {
   errorMessage = '';
   categories;
 
-  products$ = this.productService.products$.pipe(
+  //provides same array of products but now with the category name property
+  products$ = this.productService.productsWithCategory$.pipe(
     catchError(err => {
       this.errorMessage = err;
       return EMPTY;

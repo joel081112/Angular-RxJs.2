@@ -1,38 +1,54 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { Observable, throwError } from 'rxjs';
+import { combineLatest, Observable, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
 import { SupplierService } from '../suppliers/supplier.service';
 
+import { ProductCategoryService } from '../product-categories/product-category.service';
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProductService {
   private productsUrl = 'api/products';
   private suppliersUrl = this.supplierService.suppliersUrl;
 
-  products$ = this.http.get<Product[]>(this.productsUrl)
-  .pipe(
-    map(products => 
-      products.map(product => ({
-        ...product, //shortcut for syntax
-        price: product.price * 1.5,
-        searchKey: [product.productName]
-      }) as Product)
-    ),
+  //make a product stream
+  products$ = this.http.get<Product[]>(this.productsUrl).pipe(
     //tap display debugging information
-    tap(data => console.log('Products: ', JSON.stringify(data))),
+    tap((data) => console.log('Products: ', JSON.stringify(data))),
     catchError(this.handleError)
   );
 
-  constructor(private http: HttpClient,
-              private supplierService: SupplierService) { }
+  //combine latest to combine products and categories
+  //hover over and now get a product with category name not just an id
+  productsWithCategory$ = combineLatest([
+    this.products$,
+    this.productCategoryService.productCategories$,
+  ]).pipe( // combine emits one item
+    map(([products, categories]) =>
+      products.map(
+        (product) =>
+          ({
+            ...product,
+            price: product.price * 1.5,
+            //find products category using the category id
+            category: categories.find((c) => product.categoryId === c.id).name,
+            searchKey: [product.productName],
+          } as Product)
+      )
+    )
+  );
 
-
+  constructor(
+    private http: HttpClient,
+    private productCategoryService: ProductCategoryService,
+    private supplierService: SupplierService
+  ) {}
 
   private fakeProduct(): Product {
     return {
@@ -43,7 +59,7 @@ export class ProductService {
       price: 8.9,
       categoryId: 3,
       // category: 'Toolbox',
-      quantityInStock: 30
+      quantityInStock: 30,
     };
   }
 
@@ -62,5 +78,4 @@ export class ProductService {
     console.error(err);
     return throwError(errorMessage);
   }
-
 }
