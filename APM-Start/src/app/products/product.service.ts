@@ -9,7 +9,7 @@ import {
   Subject,
   throwError,
 } from 'rxjs';
-import { catchError, map, scan, tap } from 'rxjs/operators';
+import { catchError, map, scan, shareReplay, tap } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
@@ -49,7 +49,8 @@ export class ProductService {
             searchKey: [product.productName],
           } as Product)
       )
-    )
+    ),
+    shareReplay(1)
   );
 
   //since both product list and alt use this we put in the product service
@@ -66,7 +67,8 @@ export class ProductService {
       ([products, selectedProductId]) =>
         products.find((product) => product.id === selectedProductId) //find the product in the list
     ),
-    tap((product) => console.log('selectProduct ', product))
+    tap((product) => console.log('selectProduct ', product)),
+    shareReplay(1) //stream share and cache the data if doesnt change option  
   );
 
   //______ start data stream____________
