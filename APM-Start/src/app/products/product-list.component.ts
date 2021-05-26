@@ -1,6 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-
-import { Subscription } from 'rxjs';
+import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
 
 import { Product } from './product';
 import { ProductService } from './product.service';
@@ -9,27 +8,34 @@ import { ProductService } from './product.service';
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css']
 })
-export class ProductListComponent implements OnInit, OnDestroy {
+export class ProductListComponent implements OnInit{
   pageTitle = 'Product List';
   errorMessage = '';
   categories;
 
-  products: Product[] = [];
-  sub: Subscription;
+  //old way - products: Product[] = [];
+  products$: Observable<Product[]>;
+  // no longer need 
+  //sub: Subscription;
 
   constructor(private productService: ProductService) { }
 
   ngOnInit(): void {
-    this.sub = this.productService.getProducts()
+    //old way
+    /* this.sub = this.productService.getProducts()
       .subscribe(
+        //observer is notified
         products => this.products = products,
         error => this.errorMessage = error
-      );
+      ); */
+      //this way uses async pipe
+      this.products$ = this.productService.getProducts();
   }
 
+  /* old way - ensure the stream is stopped by unsubscribing
   ngOnDestroy(): void {
     this.sub.unsubscribe();
-  }
+  } */
 
   onAdd(): void {
     console.log('Not yet implemented');
