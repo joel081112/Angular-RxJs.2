@@ -1,34 +1,30 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component } from '@angular/core';
 
-import { Subscription } from 'rxjs';
-
-import { Product } from '../product';
+import { EMPTY } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ProductService } from '../product.service';
 
 @Component({
   selector: 'pm-product-list',
   templateUrl: './product-list-alt.component.html'
 })
-export class ProductListAltComponent implements OnInit, OnDestroy {
+export class ProductListAltComponent {
   pageTitle = 'Products';
   errorMessage = '';
-  selectedProductId: number;
+  selectedProductId;
 
-  products: Product[] = [];
-  sub: Subscription;
+  products$ = this.productService.products$.pipe(
+    //Catches an error and replaces with a new error so can notify the user of the issue with a new observable
+    catchError(err => {
+      this.errorMessage = err;
+      return EMPTY;
+    })
+  );
+
+  //throw error creates an observable that emits no items and immediately emits
+  //an error notification
 
   constructor(private productService: ProductService) { }
-
-  ngOnInit(): void {
-    this.sub = this.productService.getProducts().subscribe(
-      products => this.products = products,
-      error => this.errorMessage = error
-    );
-  }
-
-  ngOnDestroy(): void {
-    this.sub.unsubscribe();
-  }
 
   onSelected(productId: number): void {
     console.log('Not yet implemented');
