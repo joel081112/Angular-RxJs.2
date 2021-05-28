@@ -27,7 +27,7 @@ export class ProductService {
   //make a product stream
   products$ = this.http.get<Product[]>(this.productsUrl).pipe(
     //tap display debugging information
-    tap((data) => console.log('Products: ', JSON.stringify(data))),
+    //tap((data) => console.log('Products: ', JSON.stringify(data))),
     catchError(this.handleError)
   );
 
@@ -68,7 +68,7 @@ export class ProductService {
         products.find((product) => product.id === selectedProductId) //find the product in the list
     ),
     tap((product) => console.log('selectProduct ', product)),
-    shareReplay(1) //stream share and cache the data if doesnt change option  
+    shareReplay(1) //stream share and cache the data if doesnt change option
   );
 
   //______ start data stream____________
@@ -82,6 +82,19 @@ export class ProductService {
     this.productInsertedAction$ //action stream
   ).pipe(scan((acc: Product[], value: Product) => [...acc, value]));
   //______ end data stream __________________
+
+  //combine product stream with suppliers
+  selectedProductSuppliers$ = combineLatest([
+    this.selectedProduct$,
+    this.supplierService.suppliers$,
+  ]).pipe(
+    map(([selectedProduct, suppliers]) => //use array destructuring to assign variable to each emmission
+      suppliers.filter((supplier) =>
+        selectedProduct.supplierIds.includes(supplier.id) //filter to those suppliers
+      )
+    )
+  );
+  //use in product-detail.component
 
   constructor(
     private http: HttpClient,
