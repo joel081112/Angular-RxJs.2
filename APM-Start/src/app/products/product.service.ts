@@ -17,6 +17,7 @@ import {
   mergeMap,
   scan,
   shareReplay,
+  switchMap,
   tap,
   toArray,
 } from 'rxjs/operators';
@@ -110,8 +111,10 @@ export class ProductService {
   selectedProductSuppliers$ = this.selectedProduct$.pipe(
     //skip proces if undefined or null
     filter(selectedProduct => Boolean(selectedProduct)),
-    mergeMap((selectedProduct) =>
+    //gets latest selected product - reduces hits to the server
+    switchMap((selectedProduct) =>
       from(selectedProduct.supplierIds).pipe(
+        //we do want to get all suppliers so we keep merge map here
         mergeMap((supplierId) =>
           this.http.get<Supplier>(`${this.suppliersUrl}/${supplierId}`)
         ),
