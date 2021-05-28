@@ -4,12 +4,22 @@ import { HttpClient } from '@angular/common/http';
 import {
   BehaviorSubject,
   combineLatest,
+  from,
   merge,
   Observable,
   Subject,
   throwError,
 } from 'rxjs';
-import { catchError, map, scan, shareReplay, tap } from 'rxjs/operators';
+import {
+  catchError,
+  filter,
+  map,
+  mergeMap,
+  scan,
+  shareReplay,
+  tap,
+  toArray,
+} from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
@@ -83,8 +93,8 @@ export class ProductService {
   ).pipe(scan((acc: Product[], value: Product) => [...acc, value]));
   //______ end data stream __________________
 
-  //combine product stream with suppliers
-  selectedProductSuppliers$ = combineLatest([
+  //combine product stream with suppliers - get it all at once
+  /* selectedProductSuppliers$ = combineLatest([
     this.selectedProduct$,
     this.supplierService.suppliers$,
   ]).pipe(
@@ -93,8 +103,22 @@ export class ProductService {
         selectedProduct.supplierIds.includes(supplier.id) //filter to those suppliers
       )
     )
-  );
+  ); */
   //use in product-detail.component
+
+  //array of suppliers - just when its needed
+  selectedProductSuppliers$ = this.selectedProduct$.pipe(
+    //skip proces if undefined or null
+    filter(selectedProduct => Boolean(selectedProduct)),
+    mergeMap((selectedProduct) =>
+      from(selectedProduct.supplierIds).pipe(
+        mergeMap((supplierId) =>
+          this.http.get<Supplier>(`${this.suppliersUrl}/${supplierId}`)
+        ),
+        toArray()
+      )
+    )
+  );
 
   constructor(
     private http: HttpClient,
